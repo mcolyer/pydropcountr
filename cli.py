@@ -3,6 +3,7 @@
 PyDropCountr CLI - Command line interface for DropCountr water usage monitoring
 """
 
+import logging
 import os
 import sys
 from datetime import datetime, timedelta
@@ -15,14 +16,27 @@ from pydropcountr import DropCountrClient
 class DropCountrCLI:
     """Command line interface for DropCountr water usage monitoring"""
 
-    def __init__(self):
+    def __init__(self, debug: bool = False):
+        self.debug = debug
+        if debug:
+            logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+            print("Debug mode enabled")
+        else:
+            logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
+        self.logger = logging.getLogger(__name__)
         self.client = DropCountrClient()
+
+        if debug:
+            self.logger.debug("DropCountrCLI initialized with debug mode")
 
     def _login(self, email: str | None = None, password: str | None = None) -> bool:
         """Handle login with credentials from args or environment variables"""
         # Try arguments first, then environment variables
         email = email or os.getenv("DROPCOUNTR_EMAIL")
         password = password or os.getenv("DROPCOUNTR_PASSWORD")
+
+        self.logger.debug(f"Login attempt with email: {email[:3]}***@{email.split('@')[1] if email and '@' in email else 'None'}")
 
         if not email or not password:
             print("Error: Email and password required. Provide via:")
@@ -31,31 +45,42 @@ class DropCountrCLI:
             sys.exit(1)
 
         try:
+            self.logger.debug("Attempting login...")
             success = self.client.login(email, password)
+            self.logger.debug(f"Login result: {success}")
             if not success:
                 print("Error: Login failed. Check your credentials.")
                 sys.exit(1)
+            self.logger.debug("Login successful")
             return True
         except Exception as e:
+            self.logger.debug(f"Login exception: {e}")
             print(f"Error: Login failed - {e}")
             sys.exit(1)
 
     def _get_service_id(self, service_id: int | None = None) -> int:
         """Get service ID from argument or use first available service"""
         if service_id is not None:
+            self.logger.debug(f"Using provided service_id: {service_id}")
             return service_id
 
         # Get first service connection
         try:
+            self.logger.debug("Fetching service connections...")
             services = self.client.list_service_connections()
+            self.logger.debug(f"Retrieved {len(services) if services else 0} service connections")
+
             if not services:
+                self.logger.debug("No service connections returned from API")
                 print("Error: No service connections found")
                 sys.exit(1)
 
             service = services[0]
+            self.logger.debug(f"Using first service: {service.name} (ID: {service.id})")
             print(f"Using service: {service.name} (ID: {service.id})")
             return service.id
         except Exception as e:
+            self.logger.debug(f"Exception getting service connections: {e}")
             print(f"Error: Failed to get service connections - {e}")
             sys.exit(1)
 
@@ -186,17 +211,23 @@ class DropCountrCLI:
             password: DropCountr password (or set DROPCOUNTR_PASSWORD env var)
         """
         # Login
+        self.logger.debug("Services command: Starting login...")
         self._login(email, password)
 
         try:
+            self.logger.debug("Services command: Fetching service connections...")
             services = self.client.list_service_connections()
+            self.logger.debug(f"Services command: Retrieved {len(services) if services else 0} services")
+
             if not services:
+                self.logger.debug("Services command: No services found")
                 print("No service connections found")
                 return
 
             print(f"Found {len(services)} service connection(s):")
             print("=" * 60)
             for service in services:
+                self.logger.debug(f"Service: ID={service.id}, Name={service.name}")
                 print(f"ID: {service.id}")
                 print(f"Name: {service.name}")
                 print(f"Address: {service.address}")
@@ -207,13 +238,24 @@ class DropCountrCLI:
                 print("-" * 40)
 
         except Exception as e:
+            self.logger.debug(f"Services command exception: {e}")
             print(f"Error: Failed to get service connections - {e}")
             sys.exit(1)
 
 
 def main():
     """Main CLI entry point"""
-    fire.Fire(DropCountrCLI)
+    import sys
+
+    # Check for debug flag and remove it from sys.argv before Fire processes it
+    debug = False
+    if '--debug' in sys.argv:
+        debug = True
+        sys.argv.remove('--debug')
+
+    # Create CLI instance with debug flag
+    cli = DropCountrCLI(debug=debug)
+    fire.Fire(cli)
 
 
 if __name__ == "__main__":

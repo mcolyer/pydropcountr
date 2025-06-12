@@ -2,6 +2,7 @@
 PyDropCountr - Python library for interacting with dropcountr.com
 """
 
+import logging
 from datetime import datetime
 
 import requests
@@ -68,6 +69,8 @@ class DropCountrClient:
         self.session = requests.Session()
         self.base_url = "https://dropcountr.com"
         self.logged_in = False
+        self.user_id: int | None = None
+        self.logger = logging.getLogger(__name__)
 
     def _datetime_to_iso(self, dt: datetime | str) -> str:
         """Convert datetime object or string to ISO format string for API"""
@@ -103,6 +106,7 @@ class DropCountrClient:
             requests.RequestException: If there's a network error
         """
         login_url = f"{self.base_url}/login"
+        self.logger.debug(f"Attempting login to {login_url}")
 
         login_data = {
             "email": email,
@@ -110,18 +114,26 @@ class DropCountrClient:
         }
 
         try:
+            self.logger.debug("Sending POST request to login endpoint")
             response = self.session.post(login_url, data=login_data)
+            self.logger.debug(f"Login response status: {response.status_code}")
+            self.logger.debug(f"Login response URL: {response.url}")
             response.raise_for_status()
 
             # Check if we have a rack.session cookie
+            cookies = dict(self.session.cookies)
+            self.logger.debug(f"Cookies after login: {list(cookies.keys())}")
             if 'rack.session' in self.session.cookies:
+                self.logger.debug("rack.session cookie found - login successful")
                 self.logged_in = True
                 return True
             else:
+                self.logger.debug("No rack.session cookie found")
                 # Login failed - check response for error indicators
                 if response.status_code == 200:
                     # Might be a redirect or error page, check content
                     if "login" in response.url.lower() or "error" in response.text.lower():
+                        self.logger.debug("Login page or error detected in response")
                         self.logged_in = False
                         return False
                 self.logged_in = True
@@ -231,10 +243,33 @@ class DropCountrClient:
             requests.RequestException: If there's a network error
             ValueError: If not logged in
         """
-        if not self.logged_in:
-            raise ValueError("Must be logged in to fetch service connection details")
+        # Get all service connections and find the one with matching ID
+        service_connections = self.list_service_connections()
+        if not service_connections:
+            return None
 
-        url = f"{self.base_url}/api/service_connections/{service_connection_id}"
+        for service in service_connections:
+            if service.id == service_connection_id:
+                return service
+
+        return None
+
+    def get_user_data(self) -> dict | None:
+        """
+        Get current user data from /api/me endpoint
+
+        Returns:
+            User data dictionary, or None if failed
+
+        Raises:
+            requests.RequestException: If there's a network error
+            ValueError: If not logged in
+        """
+        if not self.logged_in:
+            raise ValueError("Must be logged in to fetch user data")
+
+        url = f"{self.base_url}/api/me"
+        self.logger.debug(f"Fetching user data from {url}")
 
         headers = {
             'accept': 'application/vnd.dropcountr.api+json;version=2',
@@ -247,19 +282,42 @@ class DropCountrClient:
         }
 
         try:
+            self.logger.debug("Sending GET request to /api/me")
             response = self.session.get(url, headers=headers)
+            self.logger.debug(f"User data response status: {response.status_code}")
             response.raise_for_status()
 
             data = response.json()
+            self.logger.debug(f"User data response type: {type(data)}")
+            self.logger.debug(f"User data response length: {len(data) if isinstance(data, list | dict) else 'N/A'}")
 
-            if 'data' not in data:
+            # Check for both response formats: [true, user_data] and {'data': user_data}
+            user_data = None
+            if isinstance(data, list) and len(data) == 2 and data[0] is True:
+                # Old format: [true, user_data]
+                user_data = data[1]
+                self.logger.debug("Found user data in old format [true, user_data]")
+            elif isinstance(data, dict) and 'data' in data:
+                # New format: {'data': user_data}
+                user_data = data['data']
+                self.logger.debug("Found user data in new format {'data': user_data}")
+            else:
+                self.logger.debug(f"Unexpected response format: {data}")
                 return None
 
-            return ServiceConnection.from_api_response(data['data'])
+            if user_data:
+                self.logger.debug(f"Found user data with keys: {list(user_data.keys()) if isinstance(user_data, dict) else 'Not a dict'}")
+                # Store user ID for potential future use
+                if 'id' in user_data:
+                    self.user_id = user_data['id']
+                    self.logger.debug(f"Stored user ID: {self.user_id}")
+                return user_data
+
+            return None
 
         except requests.RequestException as e:
             raise e
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, IndexError):
             return None
 
     def list_service_connections(self) -> list[ServiceConnection] | None:
@@ -273,37 +331,58 @@ class DropCountrClient:
             requests.RequestException: If there's a network error
             ValueError: If not logged in
         """
-        if not self.logged_in:
-            raise ValueError("Must be logged in to fetch service connections")
-
-        url = f"{self.base_url}/api/service_connections"
-
-        headers = {
-            'accept': 'application/vnd.dropcountr.api+json;version=2',
-            'accept-language': 'en-US,en;q=0.9',
-            'referer': f'{self.base_url}/dashboard',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'same-origin',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
-        }
+        self.logger.debug("Getting user data for service connections")
+        user_data = self.get_user_data()
+        if not user_data:
+            self.logger.debug("No user data returned")
+            return None
 
         try:
-            response = self.session.get(url, headers=headers)
-            response.raise_for_status()
+            # Service connections are nested in attributes.service_connections
+            attributes = user_data.get('attributes', {})
+            self.logger.debug(f"User attributes keys: {list(attributes.keys()) if attributes else 'No attributes'}")
 
-            data = response.json()
-
-            if 'data' not in data or 'member' not in data['data']:
-                return None
+            service_connections_data = attributes.get('service_connections', [])
+            self.logger.debug(f"Found {len(service_connections_data)} service connections in user data")
 
             service_connections = []
-            for service_data in data['data']['member']:
-                service_connections.append(ServiceConnection.from_api_response(service_data))
+            for service_data in service_connections_data:
+                self.logger.debug(f"Processing service connection: {service_data.get('name', 'Unknown')}")
+                # Extract relevant data for our ServiceConnection model
+                # The nested data structure is different, so we need to adapt
+                connection_data = {
+                    'id': self._extract_id_from_url(service_data.get('@id', '')),
+                    'name': service_data.get('name', ''),
+                    'meter_id': service_data.get('meter_id', ''),
+                    'measurement_period': service_data.get('measurement_period', ''),
+                    'is_disconnected': service_data.get('is_disconnected', False),
+                    '@id': service_data.get('@id', '')
+                }
+
+                # Create ServiceConnection with available data
+                service_connection = ServiceConnection(
+                    id=connection_data['id'],
+                    name=connection_data['name'],
+                    address=user_data.get('address', {}).get('street', ''),
+                    account_number=user_data.get('account_id', ''),
+                    service_type=user_data.get('attributes', {}).get('account_type', ''),
+                    status='active' if not connection_data['is_disconnected'] else 'disconnected',
+                    meter_serial=connection_data['meter_id'],
+                    api_id=connection_data['@id']
+                )
+
+                service_connections.append(service_connection)
 
             return service_connections
 
-        except requests.RequestException as e:
-            raise e
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, TypeError):
             return None
+
+    def _extract_id_from_url(self, url: str) -> int:
+        """Extract numeric ID from API URL like https://dropcountr.com/api/service_connections/1258809"""
+        if not url:
+            return 0
+        try:
+            return int(url.split('/')[-1])
+        except (ValueError, IndexError):
+            return 0
