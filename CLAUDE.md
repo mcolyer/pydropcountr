@@ -5,8 +5,9 @@ This is a Python library for interacting with dropcountr.com, providing easy acc
 
 ## Features
 - User authentication with login/logout
+- Service connection management (list and get details)
 - Water usage data fetching with date ranges
-- Structured data objects (UsageData, UsageResponse)
+- Structured data objects (ServiceConnection, UsageData, UsageResponse)
 - Date parsing and validation
 - Session management with rack.session cookies
 
@@ -27,6 +28,27 @@ client = DropCountrClient()
 success = client.login('your@email.com', 'yourpassword')
 if success:
     print("Logged in successfully!")
+```
+
+### List Service Connections
+```python
+# Get all service connections for the authenticated user
+services = client.list_service_connections()
+if services:
+    print(f"Found {len(services)} service connections:")
+    for service in services:
+        print(f"  {service.id}: {service.name} at {service.address}")
+```
+
+### Get Service Connection Details
+```python
+# Get details for a specific service connection
+service = client.get_service_connection(1064520)
+if service:
+    print(f"Service: {service.name}")
+    print(f"Address: {service.address}")
+    print(f"Account: {service.account_number}")
+    print(f"Status: {service.status}")
 ```
 
 ### Fetch Usage Data
@@ -58,20 +80,23 @@ usage = client.get_usage(
 ## API Information
 - Login URL: https://dropcountr.com/login
 - Login method: POST with email and password parameters
+- Service connections list: https://dropcountr.com/api/service_connections
+- Service connection details: https://dropcountr.com/api/service_connections/{id}
 - Usage API: https://dropcountr.com/api/service_connections/{id}/usage
 - Authentication: rack.session cookie must be maintained for subsequent requests
 - API version: application/vnd.dropcountr.api+json;version=2
 
 ## Data Classes
+- `ServiceConnection`: Service connection details including ID, name, address, account info
 - `UsageData`: Individual usage record with gallons, irrigation data, leak detection
 - `UsageResponse`: Full API response with usage data array and metadata
-- Both classes include proper type hints and date parsing utilities
+- All classes include proper type hints and parsing utilities
 
 ## Development Notes
 - Keep authentication session state for API calls
 - Implement proper error handling for login failures and API errors
 - Return data as clean Python objects with type safety
-- Service connection IDs must be obtained from the DropCountr dashboard
+- **Service Discovery**: Use `list_service_connections()` to discover available service connection IDs
 - **Date Parameters**: The library accepts both Python `datetime` objects (recommended) and ISO 8601 datetime strings
 - When using datetime objects, the library automatically converts them to the required API format
 - Timezone handling: datetime objects are converted to UTC with 'Z' suffix for API compatibility

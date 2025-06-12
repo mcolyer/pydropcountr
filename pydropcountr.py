@@ -37,6 +37,33 @@ class UsageResponse:
     consumed_via_id: str
 
 
+@dataclass
+class ServiceConnection:
+    """Represents a service connection from DropCountr"""
+    id: int
+    name: str
+    address: str
+    account_number: Optional[str] = None
+    service_type: Optional[str] = None
+    status: Optional[str] = None
+    meter_serial: Optional[str] = None
+    api_id: Optional[str] = None
+    
+    @classmethod
+    def from_api_response(cls, data: dict) -> 'ServiceConnection':
+        """Create ServiceConnection from API response data"""
+        return cls(
+            id=data.get('id'),
+            name=data.get('name', ''),
+            address=data.get('address', ''),
+            account_number=data.get('account_number'),
+            service_type=data.get('service_type'),
+            status=data.get('status'),
+            meter_serial=data.get('meter_serial'),
+            api_id=data.get('@id')
+        )
+
+
 class DropCountrClient:
     """Client for interacting with the DropCountr.com API"""
     
@@ -187,6 +214,97 @@ class DropCountrClient:
                 api_id=data['data']['@id'],
                 consumed_via_id=data['data']['consumed_via']['@id']
             )
+            
+        except requests.RequestException as e:
+            raise e
+        except (KeyError, ValueError) as e:
+            return None
+    
+    def get_service_connection(self, service_connection_id: int) -> Optional[ServiceConnection]:
+        """
+        Get details for a specific service connection
+        
+        Args:
+            service_connection_id: The service connection ID
+            
+        Returns:
+            ServiceConnection object containing service details, or None if failed
+            
+        Raises:
+            requests.RequestException: If there's a network error
+            ValueError: If not logged in
+        """
+        if not self.logged_in:
+            raise ValueError("Must be logged in to fetch service connection details")
+        
+        url = f"{self.base_url}/api/service_connections/{service_connection_id}"
+        
+        headers = {
+            'accept': 'application/vnd.dropcountr.api+json;version=2',
+            'accept-language': 'en-US,en;q=0.9',
+            'referer': f'{self.base_url}/dashboard',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+        }
+        
+        try:
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if 'data' not in data:
+                return None
+            
+            return ServiceConnection.from_api_response(data['data'])
+            
+        except requests.RequestException as e:
+            raise e
+        except (KeyError, ValueError) as e:
+            return None
+    
+    def list_service_connections(self) -> Optional[List[ServiceConnection]]:
+        """
+        List all service connections for the authenticated user
+        
+        Returns:
+            List of ServiceConnection objects, or None if failed
+            
+        Raises:
+            requests.RequestException: If there's a network error
+            ValueError: If not logged in
+        """
+        if not self.logged_in:
+            raise ValueError("Must be logged in to fetch service connections")
+        
+        url = f"{self.base_url}/api/service_connections"
+        
+        headers = {
+            'accept': 'application/vnd.dropcountr.api+json;version=2',
+            'accept-language': 'en-US,en;q=0.9',
+            'referer': f'{self.base_url}/dashboard',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+        }
+        
+        try:
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if 'data' not in data or 'member' not in data['data']:
+                return None
+            
+            service_connections = []
+            for service_data in data['data']['member']:
+                service_connections.append(ServiceConnection.from_api_response(service_data))
+            
+            return service_connections
             
         except requests.RequestException as e:
             raise e

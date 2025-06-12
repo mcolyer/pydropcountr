@@ -3,7 +3,7 @@
 Simple test script for the DropCountr login functionality
 """
 
-from pydropcountr import DropCountrClient, UsageData, UsageResponse
+from pydropcountr import DropCountrClient, UsageData, UsageResponse, ServiceConnection
 from datetime import datetime
 
 def test_client_creation():
@@ -80,6 +80,50 @@ def test_get_usage_without_login():
     except Exception as e:
         print(f"✗ Unexpected exception: {e}")
 
+def test_service_connection_class():
+    """Test the ServiceConnection class"""
+    # Test creating from API response format
+    api_data = {
+        'id': 1064520,
+        'name': 'Main Service',
+        'address': '123 Main St',
+        'account_number': 'ACC123',
+        'service_type': 'Water',
+        'status': 'Active',
+        'meter_serial': 'METER123',
+        '@id': 'https://dropcountr.com/api/service_connections/1064520'
+    }
+    
+    service = ServiceConnection.from_api_response(api_data)
+    assert service.id == 1064520
+    assert service.name == 'Main Service'
+    assert service.address == '123 Main St'
+    assert service.account_number == 'ACC123'
+    
+    print("✓ ServiceConnection class test passed")
+
+def test_service_methods_without_login():
+    """Test that service methods fail when not logged in"""
+    client = DropCountrClient()
+    
+    # Test get_service_connection
+    try:
+        result = client.get_service_connection(1064520)
+        print("✗ Expected ValueError for get_service_connection without login")
+    except ValueError as e:
+        print("✓ get_service_connection correctly raises ValueError when not logged in")
+    except Exception as e:
+        print(f"✗ Unexpected exception: {e}")
+    
+    # Test list_service_connections
+    try:
+        result = client.list_service_connections()
+        print("✗ Expected ValueError for list_service_connections without login")
+    except ValueError as e:
+        print("✓ list_service_connections correctly raises ValueError when not logged in")
+    except Exception as e:
+        print(f"✗ Unexpected exception: {e}")
+
 if __name__ == "__main__":
     print("Running basic tests for PyDropCountr...")
     test_client_creation()
@@ -87,6 +131,8 @@ if __name__ == "__main__":
     test_usage_data_class()
     test_datetime_conversion()
     test_get_usage_without_login()
+    test_service_connection_class()
+    test_service_methods_without_login()
     print("Basic tests completed!")
     print("\nTo test with real credentials and usage data, use:")
     print("from pydropcountr import DropCountrClient")
@@ -94,6 +140,19 @@ if __name__ == "__main__":
     print("client = DropCountrClient()")
     print("success = client.login('your@email.com', 'yourpassword')")
     print("if success:")
+    print("    # List all service connections")
+    print("    services = client.list_service_connections()")
+    print("    if services:")
+    print("        print(f'Found {len(services)} service connections:')")
+    print("        for service in services:")
+    print("            print(f'  {service.id}: {service.name} at {service.address}')")
+    print("    ")
+    print("    # Get specific service details")
+    print("    service = client.get_service_connection(SERVICE_CONNECTION_ID)")
+    print("    if service:")
+    print("        print(f'Service: {service.name} (ID: {service.id})')")
+    print("    ")
+    print("    # Get usage data for a service")
     print("    start_date = datetime(2025, 6, 1)")
     print("    end_date = datetime(2025, 6, 30, 23, 59, 59)")
     print("    usage = client.get_usage(SERVICE_CONNECTION_ID, start_date, end_date)")
@@ -101,6 +160,3 @@ if __name__ == "__main__":
     print("        print(f'Total records: {usage.total_items}')")
     print("        for record in usage.usage_data[:3]:  # Show first 3 records")
     print("            print(f'{record.start_date.date()}: {record.total_gallons} gallons')")
-    print("")
-    print("Note: You can still use ISO datetime strings if preferred:")
-    print("    usage = client.get_usage(SERVICE_CONNECTION_ID, '2025-06-01T00:00:00.000Z', '2025-06-30T23:59:59.000Z')")
