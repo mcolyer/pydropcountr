@@ -18,7 +18,7 @@ __email__ = "matt@colyer.name"
 
 __all__ = [
     "DropCountrClient",
-    "ServiceConnection", 
+    "ServiceConnection",
     "UsageData",
     "UsageResponse",
 ]

@@ -339,7 +339,7 @@ class DropCountrClient:
 
         try:
             all_service_connections = []
-            
+
             # First, get service connections from the current premise (in attributes)
             self.logger.debug("Checking current premise in user attributes...")
             attributes = user_data.get('attributes', {})
@@ -357,24 +357,24 @@ class DropCountrClient:
             # Then, check all other premises
             premises = user_data.get('premises', [])
             self.logger.debug(f"Found {len(premises)} total premises to check")
-            
+
             for premise in premises:
                 premise_url = premise.get('@id', '')
                 premise_id = self._extract_id_from_url(premise_url)
                 self.logger.debug(f"Checking premise: {premise_url}")
-                
+
                 # Skip the current premise (already processed above)
                 current_premise_id = attributes.get('premise_id')
                 if premise_id == current_premise_id:
                     self.logger.debug(f"Skipping current premise {premise_id} (already processed)")
                     continue
-                
+
                 # Fetch premise data
                 premise_data = self._get_premise_data(premise_id)
                 if premise_data:
                     premise_service_connections = premise_data.get('service_connections', [])
                     self.logger.debug(f"Found {len(premise_service_connections)} service connections in premise {premise_id}")
-                    
+
                     for service_data in premise_service_connections:
                         self.logger.debug(f"Processing service connection from premise {premise_id}: {service_data.get('name', 'Unknown')}")
                         service_connection = self._create_service_connection_from_data(service_data, premise_data)
@@ -391,16 +391,16 @@ class DropCountrClient:
     def _get_premise_data(self, premise_id: int) -> dict | None:
         """
         Get premise data from /api/premises/{id} endpoint
-        
+
         Args:
             premise_id: The premise ID to fetch
-            
+
         Returns:
             Premise data dictionary, or None if failed
         """
         if not self.logged_in:
             return None
-            
+
         url = f"{self.base_url}/api/premises/{premise_id}"
         self.logger.debug(f"Fetching premise data from {url}")
 
@@ -422,7 +422,7 @@ class DropCountrClient:
 
             data = response.json()
             self.logger.debug(f"Premise {premise_id} response type: {type(data)}")
-            
+
             # Handle both response formats like in get_user_data
             premise_data = None
             if isinstance(data, list) and len(data) == 2 and data[0] is True:
@@ -434,7 +434,7 @@ class DropCountrClient:
             else:
                 self.logger.debug(f"Unexpected premise {premise_id} response format: {type(data)}")
                 return None
-            
+
             if premise_data:
                 self.logger.debug(f"Premise {premise_id} has {len(premise_data.get('service_connections', []))} service connections")
                 return premise_data
@@ -451,11 +451,11 @@ class DropCountrClient:
     def _create_service_connection_from_data(self, service_data: dict, context_data: dict) -> ServiceConnection | None:
         """
         Create a ServiceConnection object from service data and context
-        
+
         Args:
             service_data: Service connection data from API
             context_data: User or premise data for additional context (address, account info)
-            
+
         Returns:
             ServiceConnection object or None if failed
         """
@@ -478,7 +478,7 @@ class DropCountrClient:
                     city = address_data.get('city', '')
                     state = address_data.get('state', '')
                     zip_code = address_data.get('zip_code', '')
-                    
+
                     # Build full address
                     address_parts = [street]
                     if city:
@@ -490,7 +490,7 @@ class DropCountrClient:
                             address_parts.append(state)
                     if zip_code:
                         address_parts.append(zip_code)
-                    
+
                     address = ', '.join(filter(None, address_parts))
                 else:
                     address = str(address_data)
