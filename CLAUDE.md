@@ -31,12 +31,13 @@ if success:
 
 ### Fetch Usage Data
 ```python
-# Get daily usage data for June 2025
-# Note: start_date and end_date must be full ISO datetime strings with timezone
+from datetime import datetime
+
+# Get daily usage data for June 2025 using Python datetime objects
 usage = client.get_usage(
     service_connection_id=1258809,
-    start_date='2025-06-01T00:00:00.000Z',    # Full datetime with timezone
-    end_date='2025-06-30T23:59:59.000Z',      # Full datetime with timezone
+    start_date=datetime(2025, 6, 1),           # Python datetime object
+    end_date=datetime(2025, 6, 30, 23, 59, 59), # Python datetime object
     period='day'  # Can be 'day', 'hour', etc.
 )
 
@@ -44,6 +45,14 @@ if usage:
     print(f"Total records: {usage.total_items}")
     for record in usage.usage_data[:3]:
         print(f"{record.start_date.date()}: {record.total_gallons} gallons")
+
+# Alternative: You can still use ISO datetime strings
+usage = client.get_usage(
+    service_connection_id=1258809,
+    start_date='2025-06-01T00:00:00.000Z',
+    end_date='2025-06-30T23:59:59.000Z',
+    period='day'
+)
 ```
 
 ## API Information
@@ -63,4 +72,6 @@ if usage:
 - Implement proper error handling for login failures and API errors
 - Return data as clean Python objects with type safety
 - Service connection IDs must be obtained from the DropCountr dashboard
-- **Important**: Date parameters must be full ISO 8601 datetime strings with timezone (e.g., '2025-06-01T00:00:00.000Z'), not just dates
+- **Date Parameters**: The library accepts both Python `datetime` objects (recommended) and ISO 8601 datetime strings
+- When using datetime objects, the library automatically converts them to the required API format
+- Timezone handling: datetime objects are converted to UTC with 'Z' suffix for API compatibility

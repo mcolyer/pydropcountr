@@ -4,6 +4,7 @@ Simple test script for the DropCountr login functionality
 """
 
 from pydropcountr import DropCountrClient, UsageData, UsageResponse
+from datetime import datetime
 
 def test_client_creation():
     """Test that we can create a client instance"""
@@ -47,12 +48,32 @@ def test_usage_data_class():
     
     print("✓ UsageData class test passed")
 
+def test_datetime_conversion():
+    """Test the datetime conversion functionality"""
+    client = DropCountrClient()
+    
+    # Test string input (should pass through)
+    str_date = "2025-06-01T00:00:00.000Z"
+    result = client._datetime_to_iso(str_date)
+    assert result == str_date
+    
+    # Test datetime input
+    dt = datetime(2025, 6, 1, 0, 0, 0)
+    result = client._datetime_to_iso(dt)
+    assert result == "2025-06-01T00:00:00.000Z"
+    
+    print("✓ Datetime conversion test passed")
+
 def test_get_usage_without_login():
     """Test that get_usage fails when not logged in"""
     client = DropCountrClient()
     
+    # Test with datetime objects
+    start_date = datetime(2025, 6, 1)
+    end_date = datetime(2025, 6, 30, 23, 59, 59)
+    
     try:
-        result = client.get_usage(1258809, "2025-06-01T00:00:00.000Z", "2025-06-30T23:59:59.000Z")
+        result = client.get_usage(1258809, start_date, end_date)
         print("✗ Expected ValueError for get_usage without login")
     except ValueError as e:
         print("✓ get_usage correctly raises ValueError when not logged in")
@@ -64,15 +85,22 @@ if __name__ == "__main__":
     test_client_creation()
     test_login_with_invalid_credentials()
     test_usage_data_class()
+    test_datetime_conversion()
     test_get_usage_without_login()
     print("Basic tests completed!")
     print("\nTo test with real credentials and usage data, use:")
     print("from pydropcountr import DropCountrClient")
+    print("from datetime import datetime")
     print("client = DropCountrClient()")
     print("success = client.login('your@email.com', 'yourpassword')")
     print("if success:")
-    print("    usage = client.get_usage(SERVICE_CONNECTION_ID, '2025-06-01T00:00:00.000Z', '2025-06-30T23:59:59.000Z')")
+    print("    start_date = datetime(2025, 6, 1)")
+    print("    end_date = datetime(2025, 6, 30, 23, 59, 59)")
+    print("    usage = client.get_usage(SERVICE_CONNECTION_ID, start_date, end_date)")
     print("    if usage:")
     print("        print(f'Total records: {usage.total_items}')")
     print("        for record in usage.usage_data[:3]:  # Show first 3 records")
     print("            print(f'{record.start_date.date()}: {record.total_gallons} gallons')")
+    print("")
+    print("Note: You can still use ISO datetime strings if preferred:")
+    print("    usage = client.get_usage(SERVICE_CONNECTION_ID, '2025-06-01T00:00:00.000Z', '2025-06-30T23:59:59.000Z')")

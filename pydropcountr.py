@@ -3,7 +3,7 @@ PyDropCountr - Python library for interacting with dropcountr.com
 """
 
 import requests
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -44,6 +44,25 @@ class DropCountrClient:
         self.session = requests.Session()
         self.base_url = "https://dropcountr.com"
         self.logged_in = False
+    
+    def _datetime_to_iso(self, dt: Union[datetime, str]) -> str:
+        """Convert datetime object or string to ISO format string for API"""
+        if isinstance(dt, str):
+            return dt
+        elif isinstance(dt, datetime):
+            # Format as ISO string with milliseconds and Z suffix
+            iso_string = dt.isoformat()
+            # Add milliseconds if not present
+            if '.' not in iso_string:
+                iso_string += '.000'
+            # Replace timezone info with Z
+            if iso_string.endswith('+00:00'):
+                iso_string = iso_string.replace('+00:00', 'Z')
+            elif not iso_string.endswith('Z'):
+                iso_string += 'Z'
+            return iso_string
+        else:
+            raise ValueError(f"Expected datetime or str, got {type(dt)}")
     
     def login(self, email: str, password: str) -> bool:
         """
@@ -97,14 +116,14 @@ class DropCountrClient:
         self.session.cookies.clear()
         self.logged_in = False
     
-    def get_usage(self, service_connection_id: int, start_date: str, end_date: str, period: str = "day") -> Optional[UsageResponse]:
+    def get_usage(self, service_connection_id: int, start_date: Union[datetime, str], end_date: Union[datetime, str], period: str = "day") -> Optional[UsageResponse]:
         """
         Get usage data for a service connection
         
         Args:
             service_connection_id: The service connection ID
-            start_date: Start date in ISO format (e.g., "2025-06-01T00:00:00.000Z")
-            end_date: End date in ISO format (e.g., "2025-06-30T23:59:59.000Z")
+            start_date: Start date as datetime object or ISO format string
+            end_date: End date as datetime object or ISO format string
             period: Period granularity ("day", "hour", etc.)
             
         Returns:
@@ -112,13 +131,17 @@ class DropCountrClient:
             
         Raises:
             requests.RequestException: If there's a network error
-            ValueError: If not logged in
+            ValueError: If not logged in or invalid date format
         """
         if not self.logged_in:
             raise ValueError("Must be logged in to fetch usage data")
         
+        # Convert datetime objects to ISO strings
+        start_iso = self._datetime_to_iso(start_date)
+        end_iso = self._datetime_to_iso(end_date)
+        
         # Format the during parameter
-        during = f"{start_date}/{end_date}"
+        during = f"{start_iso}/{end_iso}"
         
         url = f"{self.base_url}/api/service_connections/{service_connection_id}/usage"
         
