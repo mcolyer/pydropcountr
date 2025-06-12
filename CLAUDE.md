@@ -32,11 +32,12 @@ if success:
 ### Fetch Usage Data
 ```python
 # Get daily usage data for June 2025
+# Note: start_date and end_date must be full ISO datetime strings with timezone
 usage = client.get_usage(
     service_connection_id=1258809,
-    start_date='2025-06-01T00:00:00.000Z',
-    end_date='2025-06-30T23:59:59.000Z',
-    period='day'
+    start_date='2025-06-01T00:00:00.000Z',    # Full datetime with timezone
+    end_date='2025-06-30T23:59:59.000Z',      # Full datetime with timezone
+    period='day'  # Can be 'day', 'hour', etc.
 )
 
 if usage:
@@ -62,3 +63,4 @@ if usage:
 - Implement proper error handling for login failures and API errors
 - Return data as clean Python objects with type safety
 - Service connection IDs must be obtained from the DropCountr dashboard
+- **Important**: Date parameters must be full ISO 8601 datetime strings with timezone (e.g., '2025-06-01T00:00:00.000Z'), not just dates
