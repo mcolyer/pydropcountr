@@ -100,3 +100,39 @@ usage = client.get_usage(
 - **Date Parameters**: The library accepts both Python `datetime` objects (recommended) and ISO 8601 datetime strings
 - When using datetime objects, the library automatically converts them to the required API format
 - Timezone handling: datetime objects are converted to UTC with 'Z' suffix for API compatibility
+
+## Changelog Management
+
+### Using CHANGELOG.md
+This project maintains a comprehensive CHANGELOG.md file following [Keep a Changelog](https://keepachangelog.com/) format:
+
+**When to update the changelog:**
+- Every significant change to the library or CLI
+- New features, bug fixes, API changes, or breaking changes
+- Before each release to move items from [Unreleased] to a version section
+
+**How to update the changelog:**
+1. Add new changes under the `[Unreleased]` section
+2. Use appropriate categories: Added, Changed, Deprecated, Removed, Fixed, Security
+3. Write clear, user-focused descriptions of changes
+4. Include relevant details like new CLI flags, API changes, or breaking changes
+
+**Release process:**
+1. Update CHANGELOG.md with new version section
+2. Move items from [Unreleased] to the new version section with date
+3. Update version number in pyproject.toml
+4. Create git tag with version number: `git tag v0.x.x`
+5. Create GitHub release with changelog notes
+
+**Example changelog entry:**
+```markdown
+## [Unreleased]
+
+### Added
+- New CLI flag `--format` for output formatting
+- Support for JSON output in CLI
+
+### Fixed
+- Authentication timeout handling
+- Memory leak in session management
+```
