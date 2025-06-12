@@ -36,7 +36,12 @@ class DropCountrCLI:
         email = email or os.getenv("DROPCOUNTR_EMAIL")
         password = password or os.getenv("DROPCOUNTR_PASSWORD")
 
-        self.logger.debug(f"Login attempt with email: {email[:3]}***@{email.split('@')[1] if email and '@' in email else 'None'}")
+        # Safe debug logging for email
+        if email and '@' in email:
+            email_debug = f"{email[:3]}***@{email.split('@')[1]}"
+        else:
+            email_debug = f"'{email}'" if email else 'None'
+        self.logger.debug(f"Login attempt with email: {email_debug}")
 
         if not email or not password:
             print("Error: Email and password required. Provide via:")
