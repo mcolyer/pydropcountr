@@ -7,17 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-01-03
+
 ### Added
+- GitHub Actions workflow for automated PyPI publishing with trusted publishing
 - Debug logging support with `--debug` flag for CLI troubleshooting
 - Comprehensive logging throughout library and CLI for better error tracking
-- Backward compatibility for API response format changes
+- PUBLISHING.md guide for PyPI deployment and trusted publishing setup
+- Support for multiple premises - now discovers all service connections across user's properties
+- Complete address information (street, city, state, zip) in services and usage commands
+- Service type information (Multi Family, Single Family) in services list
+- Enhanced CLI with address display for better property identification
 
 ### Fixed
-- API response format handling for `/api/me` endpoint (changed from `[true, user_data]` to `{'data': user_data}`)
-- Service connections discovery now works correctly with updated API format
+- API response format handling for `/api/me` endpoint (supports both old and new formats)
+- Multiple premises support - fixed bug where only first premise's service connections were found
+- Service connections discovery now works correctly across all user premises
+- Email None handling in debug logging to prevent crashes with missing credentials
+- Linting issues and code formatting for clean CI/CD runs
 
 ### Changed
-- Improved error messages and debugging capabilities
+- Restructured project as proper Python package with `pydropcountr/` directory
+- Updated build system to use Hatchling with comprehensive PyPI metadata
+- Improved error messages and debugging capabilities throughout
+- Enhanced address display format with complete location information
+- Updated CI workflow to work with new package structure and latest tooling
 
 ## [0.3.0] - 2025-06-12
 

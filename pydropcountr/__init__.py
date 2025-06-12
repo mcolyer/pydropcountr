@@ -12,7 +12,7 @@ from .pydropcountr import (
     UsageResponse,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Matthew Colyer"
 __email__ = "matt@colyer.name"
 
