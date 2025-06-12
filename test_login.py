@@ -3,8 +3,10 @@
 Simple test script for the DropCountr login functionality
 """
 
-from pydropcountr import DropCountrClient, UsageData, UsageResponse, ServiceConnection
 from datetime import datetime
+
+from pydropcountr import DropCountrClient, ServiceConnection, UsageData
+
 
 def test_client_creation():
     """Test that we can create a client instance"""
@@ -15,7 +17,7 @@ def test_client_creation():
 def test_login_with_invalid_credentials():
     """Test login with obviously invalid credentials"""
     client = DropCountrClient()
-    
+
     # This should fail gracefully
     try:
         result = client.login("invalid@example.com", "wrongpassword")
@@ -33,11 +35,11 @@ def test_usage_data_class():
         irrigation_events=0.0,
         is_leaking=False
     )
-    
+
     # Test property access
     assert usage.total_gallons == 7.4805193
     assert not usage.is_leaking
-    
+
     # Test date parsing
     start_date = usage.start_date
     end_date = usage.end_date
@@ -45,37 +47,37 @@ def test_usage_data_class():
     assert start_date.month == 6
     assert start_date.day == 1
     assert end_date.day == 2
-    
+
     print("✓ UsageData class test passed")
 
 def test_datetime_conversion():
     """Test the datetime conversion functionality"""
     client = DropCountrClient()
-    
+
     # Test string input (should pass through)
     str_date = "2025-06-01T00:00:00.000Z"
     result = client._datetime_to_iso(str_date)
     assert result == str_date
-    
+
     # Test datetime input
     dt = datetime(2025, 6, 1, 0, 0, 0)
     result = client._datetime_to_iso(dt)
     assert result == "2025-06-01T00:00:00.000Z"
-    
+
     print("✓ Datetime conversion test passed")
 
 def test_get_usage_without_login():
     """Test that get_usage fails when not logged in"""
     client = DropCountrClient()
-    
+
     # Test with datetime objects
     start_date = datetime(2025, 6, 1)
     end_date = datetime(2025, 6, 30, 23, 59, 59)
-    
+
     try:
-        result = client.get_usage(1258809, start_date, end_date)
+        client.get_usage(1258809, start_date, end_date)
         print("✗ Expected ValueError for get_usage without login")
-    except ValueError as e:
+    except ValueError:
         print("✓ get_usage correctly raises ValueError when not logged in")
     except Exception as e:
         print(f"✗ Unexpected exception: {e}")
@@ -93,33 +95,33 @@ def test_service_connection_class():
         'meter_serial': 'METER123',
         '@id': 'https://dropcountr.com/api/service_connections/1064520'
     }
-    
+
     service = ServiceConnection.from_api_response(api_data)
     assert service.id == 1064520
     assert service.name == 'Main Service'
     assert service.address == '123 Main St'
     assert service.account_number == 'ACC123'
-    
+
     print("✓ ServiceConnection class test passed")
 
 def test_service_methods_without_login():
     """Test that service methods fail when not logged in"""
     client = DropCountrClient()
-    
+
     # Test get_service_connection
     try:
-        result = client.get_service_connection(1064520)
+        client.get_service_connection(1064520)
         print("✗ Expected ValueError for get_service_connection without login")
-    except ValueError as e:
+    except ValueError:
         print("✓ get_service_connection correctly raises ValueError when not logged in")
     except Exception as e:
         print(f"✗ Unexpected exception: {e}")
-    
+
     # Test list_service_connections
     try:
-        result = client.list_service_connections()
+        client.list_service_connections()
         print("✗ Expected ValueError for list_service_connections without login")
-    except ValueError as e:
+    except ValueError:
         print("✓ list_service_connections correctly raises ValueError when not logged in")
     except Exception as e:
         print(f"✗ Unexpected exception: {e}")
@@ -160,3 +162,4 @@ if __name__ == "__main__":
     print("        print(f'Total records: {usage.total_items}')")
     print("        for record in usage.usage_data[:3]:  # Show first 3 records")
     print("            print(f'{record.start_date.date()}: {record.total_gallons} gallons')")
+
