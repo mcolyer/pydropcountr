@@ -322,7 +322,7 @@ class DropCountrClient:
 
     def list_service_connections(self) -> list[ServiceConnection] | None:
         """
-        List all service connections for the authenticated user
+        List all service connections for the authenticated user across all premises
 
         Returns:
             List of ServiceConnection objects, or None if failed
@@ -338,44 +338,189 @@ class DropCountrClient:
             return None
 
         try:
-            # Service connections are nested in attributes.service_connections
+            all_service_connections = []
+            
+            # First, get service connections from the current premise (in attributes)
+            self.logger.debug("Checking current premise in user attributes...")
             attributes = user_data.get('attributes', {})
             self.logger.debug(f"User attributes keys: {list(attributes.keys()) if attributes else 'No attributes'}")
 
             service_connections_data = attributes.get('service_connections', [])
-            self.logger.debug(f"Found {len(service_connections_data)} service connections in user data")
+            self.logger.debug(f"Found {len(service_connections_data)} service connections in current premise")
 
-            service_connections = []
             for service_data in service_connections_data:
-                self.logger.debug(f"Processing service connection: {service_data.get('name', 'Unknown')}")
-                # Extract relevant data for our ServiceConnection model
-                # The nested data structure is different, so we need to adapt
-                connection_data = {
-                    'id': self._extract_id_from_url(service_data.get('@id', '')),
-                    'name': service_data.get('name', ''),
-                    'meter_id': service_data.get('meter_id', ''),
-                    'measurement_period': service_data.get('measurement_period', ''),
-                    'is_disconnected': service_data.get('is_disconnected', False),
-                    '@id': service_data.get('@id', '')
-                }
+                self.logger.debug(f"Processing service connection from current premise: {service_data.get('name', 'Unknown')}")
+                service_connection = self._create_service_connection_from_data(service_data, user_data)
+                if service_connection:
+                    all_service_connections.append(service_connection)
 
-                # Create ServiceConnection with available data
-                service_connection = ServiceConnection(
-                    id=connection_data['id'],
-                    name=connection_data['name'],
-                    address=user_data.get('address', {}).get('street', ''),
-                    account_number=user_data.get('account_id', ''),
-                    service_type=user_data.get('attributes', {}).get('account_type', ''),
-                    status='active' if not connection_data['is_disconnected'] else 'disconnected',
-                    meter_serial=connection_data['meter_id'],
-                    api_id=connection_data['@id']
-                )
+            # Then, check all other premises
+            premises = user_data.get('premises', [])
+            self.logger.debug(f"Found {len(premises)} total premises to check")
+            
+            for premise in premises:
+                premise_url = premise.get('@id', '')
+                premise_id = self._extract_id_from_url(premise_url)
+                self.logger.debug(f"Checking premise: {premise_url}")
+                
+                # Skip the current premise (already processed above)
+                current_premise_id = attributes.get('premise_id')
+                if premise_id == current_premise_id:
+                    self.logger.debug(f"Skipping current premise {premise_id} (already processed)")
+                    continue
+                
+                # Fetch premise data
+                premise_data = self._get_premise_data(premise_id)
+                if premise_data:
+                    premise_service_connections = premise_data.get('service_connections', [])
+                    self.logger.debug(f"Found {len(premise_service_connections)} service connections in premise {premise_id}")
+                    
+                    for service_data in premise_service_connections:
+                        self.logger.debug(f"Processing service connection from premise {premise_id}: {service_data.get('name', 'Unknown')}")
+                        service_connection = self._create_service_connection_from_data(service_data, premise_data)
+                        if service_connection:
+                            all_service_connections.append(service_connection)
 
-                service_connections.append(service_connection)
+            self.logger.debug(f"Total service connections found: {len(all_service_connections)}")
+            return all_service_connections if all_service_connections else None
 
-            return service_connections
+        except (KeyError, ValueError, TypeError) as e:
+            self.logger.debug(f"Error processing service connections: {e}")
+            return None
 
-        except (KeyError, ValueError, TypeError):
+    def _get_premise_data(self, premise_id: int) -> dict | None:
+        """
+        Get premise data from /api/premises/{id} endpoint
+        
+        Args:
+            premise_id: The premise ID to fetch
+            
+        Returns:
+            Premise data dictionary, or None if failed
+        """
+        if not self.logged_in:
+            return None
+            
+        url = f"{self.base_url}/api/premises/{premise_id}"
+        self.logger.debug(f"Fetching premise data from {url}")
+
+        headers = {
+            'accept': 'application/vnd.dropcountr.api+json;version=2',
+            'accept-language': 'en-US,en;q=0.9',
+            'referer': f'{self.base_url}/dashboard',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+        }
+
+        try:
+            self.logger.debug(f"Sending GET request to /api/premises/{premise_id}")
+            response = self.session.get(url, headers=headers)
+            self.logger.debug(f"Premise {premise_id} response status: {response.status_code}")
+            response.raise_for_status()
+
+            data = response.json()
+            self.logger.debug(f"Premise {premise_id} response type: {type(data)}")
+            
+            # Handle both response formats like in get_user_data
+            premise_data = None
+            if isinstance(data, list) and len(data) == 2 and data[0] is True:
+                premise_data = data[1]
+                self.logger.debug(f"Found premise {premise_id} data in old format [true, premise_data]")
+            elif isinstance(data, dict) and 'data' in data:
+                premise_data = data['data']
+                self.logger.debug(f"Found premise {premise_id} data in new format with 'data' key")
+            else:
+                self.logger.debug(f"Unexpected premise {premise_id} response format: {type(data)}")
+                return None
+            
+            if premise_data:
+                self.logger.debug(f"Premise {premise_id} has {len(premise_data.get('service_connections', []))} service connections")
+                return premise_data
+
+            return None
+
+        except requests.RequestException as e:
+            self.logger.debug(f"Error fetching premise {premise_id}: {e}")
+            return None
+        except (KeyError, ValueError, IndexError) as e:
+            self.logger.debug(f"Error parsing premise {premise_id} data: {e}")
+            return None
+
+    def _create_service_connection_from_data(self, service_data: dict, context_data: dict) -> ServiceConnection | None:
+        """
+        Create a ServiceConnection object from service data and context
+        
+        Args:
+            service_data: Service connection data from API
+            context_data: User or premise data for additional context (address, account info)
+            
+        Returns:
+            ServiceConnection object or None if failed
+        """
+        try:
+            connection_data = {
+                'id': self._extract_id_from_url(service_data.get('@id', '')),
+                'name': service_data.get('name', ''),
+                'meter_id': service_data.get('meter_id', ''),
+                'measurement_period': service_data.get('measurement_period', ''),
+                'is_disconnected': service_data.get('is_disconnected', False),
+                '@id': service_data.get('@id', '')
+            }
+
+            # Get address from context (could be user data or premise data)
+            address = ''
+            if 'address' in context_data:
+                address_data = context_data.get('address', {})
+                if isinstance(address_data, dict):
+                    street = address_data.get('street', '')
+                    city = address_data.get('city', '')
+                    state = address_data.get('state', '')
+                    zip_code = address_data.get('zip_code', '')
+                    
+                    # Build full address
+                    address_parts = [street]
+                    if city:
+                        address_parts.append(city)
+                    if state:
+                        if city:
+                            address_parts[-1] = f"{city}, {state}"
+                        else:
+                            address_parts.append(state)
+                    if zip_code:
+                        address_parts.append(zip_code)
+                    
+                    address = ', '.join(filter(None, address_parts))
+                else:
+                    address = str(address_data)
+            elif 'name' in context_data:
+                address = context_data.get('name', '')
+
+            # Get account info from context
+            account_number = context_data.get('account_id', '')
+            service_type = context_data.get('account_type', '')
+            if not service_type and 'attributes' in context_data:
+                service_type = context_data.get('attributes', {}).get('account_type', '')
+
+            self.logger.debug(f"Service {connection_data['id']}: address='{address}', account='{account_number}', type='{service_type}'")
+
+            # Create ServiceConnection with available data
+            service_connection = ServiceConnection(
+                id=connection_data['id'],
+                name=connection_data['name'],
+                address=address,
+                account_number=account_number,
+                service_type=service_type,
+                status='active' if not connection_data['is_disconnected'] else 'disconnected',
+                meter_serial=connection_data['meter_id'],
+                api_id=connection_data['@id']
+            )
+
+            return service_connection
+
+        except (KeyError, ValueError, TypeError) as e:
+            self.logger.debug(f"Error creating service connection: {e}")
             return None
 
     def _extract_id_from_url(self, url: str) -> int:

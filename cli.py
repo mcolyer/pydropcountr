@@ -233,6 +233,8 @@ class DropCountrCLI:
                 print(f"Address: {service.address}")
                 if service.account_number:
                     print(f"Account: {service.account_number}")
+                if service.service_type:
+                    print(f"Type: {service.service_type}")
                 if service.status:
                     print(f"Status: {service.status}")
                 print("-" * 40)
