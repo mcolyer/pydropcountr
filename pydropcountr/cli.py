@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import fire
 
-from pydropcountr import DropCountrClient
+from .pydropcountr import DropCountrClient
 
 
 class DropCountrCLI:
