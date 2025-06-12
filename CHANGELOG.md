@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-01-03
+
+### Fixed
+- All MyPy type checking errors for improved code quality and IDE support
+- Missing return type annotations throughout library and CLI
+- Type compatibility issues in ServiceConnection instantiation
+- Return type consistency across all public methods
+
 ## [0.1.1] - 2025-01-03
 
 ### Added

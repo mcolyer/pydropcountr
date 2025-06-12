@@ -51,7 +51,7 @@ class ServiceConnection(BaseModel):
     def from_api_response(cls, data: dict) -> 'ServiceConnection':
         """Create ServiceConnection from API response data"""
         return cls(
-            id=data.get('id'),
+            id=data.get('id', 0),
             name=data.get('name', ''),
             address=data.get('address', ''),
             account_number=data.get('account_number'),
@@ -65,7 +65,7 @@ class ServiceConnection(BaseModel):
 class DropCountrClient:
     """Client for interacting with the DropCountr.com API"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.session = requests.Session()
         self.base_url = "https://dropcountr.com"
         self.logged_in = False
@@ -145,9 +145,9 @@ class DropCountrClient:
 
     def is_logged_in(self) -> bool:
         """Check if the client is currently logged in"""
-        return self.logged_in
+        return bool(self.logged_in)
 
-    def logout(self):
+    def logout(self) -> None:
         """Clear the session and logout"""
         self.session.cookies.clear()
         self.logged_in = False
@@ -311,7 +311,7 @@ class DropCountrClient:
                 if 'id' in user_data:
                     self.user_id = user_data['id']
                     self.logger.debug(f"Stored user ID: {self.user_id}")
-                return user_data
+                return dict(user_data)
 
             return None
 
@@ -437,7 +437,7 @@ class DropCountrClient:
 
             if premise_data:
                 self.logger.debug(f"Premise {premise_id} has {len(premise_data.get('service_connections', []))} service connections")
-                return premise_data
+                return dict(premise_data)
 
             return None
 

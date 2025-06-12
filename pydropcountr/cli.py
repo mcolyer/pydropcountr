@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import fire
 
-from .pydropcountr import DropCountrClient
+from .pydropcountr import DropCountrClient, ServiceConnection
 
 
 class DropCountrCLI:
@@ -95,7 +95,7 @@ class DropCountrCLI:
             print(f"Error: Failed to get service connections - {e}")
             sys.exit(1)
 
-    def _get_service_details(self, service_id: int):
+    def _get_service_details(self, service_id: int) -> ServiceConnection | None:
         """Get service connection details by ID"""
         try:
             self.logger.debug(f"Fetching details for service ID: {service_id}")
@@ -111,11 +111,11 @@ class DropCountrCLI:
             self.logger.debug(f"Error getting service details for {service_id}: {e}")
             return None
 
-    def _format_usage_data(self, usage_data, title: str):
+    def _format_usage_data(self, usage_data: list, title: str) -> float | None:
         """Format and display usage data"""
         if not usage_data:
             print(f"{title}: No data available")
-            return
+            return None
 
         print(f"\n{title}:")
         total_gallons = 0
@@ -138,7 +138,7 @@ class DropCountrCLI:
         end_date: str | None = None,
         period: str = "day",
         days: int | None = None,
-    ):
+    ) -> None:
         """
         Get water usage data (default: yesterday + last 7 days)
 
@@ -229,7 +229,7 @@ class DropCountrCLI:
         self,
         email: str | None = None,
         password: str | None = None,
-    ):
+    ) -> None:
         """
         List all service connections
 
@@ -272,7 +272,7 @@ class DropCountrCLI:
             sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main CLI entry point"""
     import sys
 
