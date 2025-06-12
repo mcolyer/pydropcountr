@@ -62,6 +62,11 @@ class DropCountrCLI:
         """Get service ID from argument or use first available service"""
         if service_id is not None:
             self.logger.debug(f"Using provided service_id: {service_id}")
+            # Get service details to show address
+            service = self._get_service_details(service_id)
+            if service:
+                print(f"Using service: {service.name} (ID: {service.id})")
+                print(f"Address: {service.address}")
             return service_id
 
         # Get first service connection
@@ -76,13 +81,30 @@ class DropCountrCLI:
                 sys.exit(1)
 
             service = services[0]
-            self.logger.debug(f"Using first service: {service.name} (ID: {service.id})")
+            self.logger.debug(f"Using first service: {service.name} (ID: {service.id}) at {service.address}")
             print(f"Using service: {service.name} (ID: {service.id})")
+            print(f"Address: {service.address}")
             return service.id
         except Exception as e:
             self.logger.debug(f"Exception getting service connections: {e}")
             print(f"Error: Failed to get service connections - {e}")
             sys.exit(1)
+
+    def _get_service_details(self, service_id: int):
+        """Get service connection details by ID"""
+        try:
+            self.logger.debug(f"Fetching details for service ID: {service_id}")
+            services = self.client.list_service_connections()
+            if services:
+                for service in services:
+                    if service.id == service_id:
+                        self.logger.debug(f"Found service {service_id}: {service.name} at {service.address}")
+                        return service
+            self.logger.debug(f"Service {service_id} not found")
+            return None
+        except Exception as e:
+            self.logger.debug(f"Error getting service details for {service_id}: {e}")
+            return None
 
     def _format_usage_data(self, usage_data, title: str):
         """Format and display usage data"""
