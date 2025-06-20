@@ -251,7 +251,7 @@ Common errors:
 - `requests.RequestException`: Network connectivity issues
 - Returns `None`: API returned unexpected data format
 
-## Date Handling
+## Date and Timezone Handling
 
 The library accepts both Python `datetime` objects and ISO 8601 strings:
 
@@ -267,7 +267,28 @@ start_date = '2025-06-01T00:00:00.000Z'
 end_date = '2025-06-30T23:59:59.000Z'
 ```
 
-Datetime objects are automatically converted to the correct API format with UTC timezone.
+### Timezone Behavior
+
+PyDropCountr uses a minimal timezone handling approach:
+
+- **Naive datetime objects are treated as UTC** - automatically converted to 'Z' suffix format for the API
+- **API responses parsed as UTC** - 'Z' suffix converted to '+00:00' for Python datetime parsing  
+- **No timezone conversion** - library doesn't handle different timezones or local time conversion
+- **Standard library only** - uses datetime module, no pytz/zoneinfo dependencies
+
+```python
+from datetime import datetime
+
+# This naive datetime is treated as UTC
+dt = datetime(2025, 6, 1, 12, 0, 0)  # Assumed to be UTC
+usage = client.get_usage(service_id, dt, dt)
+
+# API returns timezone-aware datetime objects in UTC
+for record in usage.usage_data:
+    print(record.start_date)  # timezone-aware datetime in UTC
+```
+
+**Important**: If you need to work with local timezones, convert your datetime objects to UTC before passing them to the library.
 
 ## Development
 
