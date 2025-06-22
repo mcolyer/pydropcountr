@@ -16,7 +16,16 @@ This is a Python library for interacting with dropcountr.com, providing easy acc
 - Python 3.12+ required
 - Dependencies: requests>=2.31.0
 - Run tests with: `uv run python test_login.py`
-- Run linting with: `uv run ruff check` (when configured)
+- Run linting with: `uv run ruff check`
+- Run formatting with: `uv run ruff format`
+- Run type checking with: `uv run mypy pydropcountr/pydropcountr.py`
+
+### Code Quality Requirements
+- **Linting**: All code must pass `ruff check` without errors
+- **Formatting**: All code must be formatted with `ruff format` 
+- **Type checking**: All code must pass MyPy type checking
+- **Tests**: All existing tests must continue to pass
+- **Quality gates**: Run all quality checks before committing: linting, formatting, type checking, tests
 
 ## Usage Examples
 
@@ -106,6 +115,12 @@ usage = client.get_usage(
 - **Service Discovery**: Use `list_service_connections()` to discover available service connection IDs
 - **Date Parameters**: The library accepts both Python `datetime` objects (recommended) and ISO 8601 datetime strings
 - When using datetime objects, the library automatically converts them to the required API format
+
+### API Discovery & Documentation
+- **Investigate actual behavior**: Don't trust API documentation or format conventions - test actual responses
+- **Example discovery**: API timestamps with 'Z' suffix appear to be UTC but are actually local time
+- **Verification approach**: Test with known local time data to verify timezone behavior
+- **Breaking changes**: When fixing incorrect behavior, document as breaking change even if fixing a bug
 
 ## Timezone Handling (v0.1.3+)
 - **Breaking Change**: Fixed incorrect UTC parsing - API timestamps are actually in local time despite 'Z' suffix
