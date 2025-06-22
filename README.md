@@ -158,9 +158,22 @@ usage = client.get_usage(
 
 The main client for interacting with DropCountr.
 
+#### Initialization
+```python
+# Default: Pacific timezone (America/Los_Angeles)
+client = DropCountrClient()
+
+# Custom timezone
+client = DropCountrClient(timezone="America/New_York")
+client = DropCountrClient(timezone="UTC")
+
+# Using ZoneInfo object
+from zoneinfo import ZoneInfo
+client = DropCountrClient(timezone=ZoneInfo("Europe/London"))
+```
+
 #### Authentication
 ```python
-client = DropCountrClient()
 success = client.login(email: str, password: str) -> bool
 client.logout() -> None
 client.is_logged_in() -> bool
@@ -220,8 +233,8 @@ class UsageData(BaseModel):
     is_leaking: bool                  # Leak detection status
     
     # Convenience properties
-    start_date: datetime              # Parsed start date
-    end_date: datetime                # Parsed end date
+    start_date: datetime              # Parsed start date (timezone-aware)
+    end_date: datetime                # Parsed end date (timezone-aware)
 ```
 
 #### UsageResponse
@@ -269,26 +282,35 @@ end_date = '2025-06-30T23:59:59.000Z'
 
 ### Timezone Behavior
 
-PyDropCountr uses a minimal timezone handling approach:
+**⚠️ Breaking Change in v0.1.3**: Timezone handling has been fixed to correctly represent local time.
 
-- **Naive datetime objects are treated as UTC** - automatically converted to 'Z' suffix format for the API
-- **API responses parsed as UTC** - 'Z' suffix converted to '+00:00' for Python datetime parsing  
-- **No timezone conversion** - library doesn't handle different timezones or local time conversion
-- **Standard library only** - uses datetime module, no pytz/zoneinfo dependencies
+PyDropCountr now properly handles timezone-aware datetime objects:
+
+- **Default timezone**: Pacific Time (`America/Los_Angeles`) - configurable during client initialization
+- **API timestamps**: Despite having 'Z' suffix, timestamps are actually in local time (not UTC)
+- **Returned datetimes**: All `start_date` and `end_date` properties are timezone-aware
+- **Standard library**: Uses Python 3.12+ `zoneinfo` module (no external dependencies)
 
 ```python
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-# This naive datetime is treated as UTC
-dt = datetime(2025, 6, 1, 12, 0, 0)  # Assumed to be UTC
-usage = client.get_usage(service_id, dt, dt)
+# Default Pacific timezone
+client = DropCountrClient()
+usage = client.get_usage(service_id, start_date, end_date)
 
-# API returns timezone-aware datetime objects in UTC
+# Returned datetimes are timezone-aware in Pacific time
 for record in usage.usage_data:
-    print(record.start_date)  # timezone-aware datetime in UTC
+    print(record.start_date)  # 2025-06-01 08:00:00-07:00 (PDT)
+    print(record.start_date.tzinfo)  # America/Los_Angeles
+
+# Custom timezone for other regions
+client = DropCountrClient(timezone="America/New_York")
+# or
+client = DropCountrClient(timezone=ZoneInfo("UTC"))
 ```
 
-**Important**: If you need to work with local timezones, convert your datetime objects to UTC before passing them to the library.
+**Migration from v0.1.2**: If you were previously working around the incorrect UTC timestamps, you'll need to update your code as datetimes are now correctly timezone-aware in local time.
 
 ## Development
 

@@ -54,6 +54,11 @@ if service:
 ### Fetch Usage Data
 ```python
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+# Create client with timezone (defaults to Pacific)
+client = DropCountrClient()
+# Or specify custom timezone: client = DropCountrClient(timezone="America/New_York")
 
 # Get daily usage data for June 2025 using Python datetime objects
 usage = client.get_usage(
@@ -66,7 +71,9 @@ usage = client.get_usage(
 if usage:
     print(f"Total records: {usage.total_items}")
     for record in usage.usage_data[:3]:
-        print(f"{record.start_date.date()}: {record.total_gallons} gallons")
+        # Now correctly timezone-aware in local time
+        print(f"{record.start_date}: {record.total_gallons} gallons")
+        print(f"Timezone: {record.start_date.tzinfo}")
 
 # Alternative: You can still use ISO datetime strings
 usage = client.get_usage(
@@ -99,7 +106,27 @@ usage = client.get_usage(
 - **Service Discovery**: Use `list_service_connections()` to discover available service connection IDs
 - **Date Parameters**: The library accepts both Python `datetime` objects (recommended) and ISO 8601 datetime strings
 - When using datetime objects, the library automatically converts them to the required API format
-- Timezone handling: datetime objects are converted to UTC with 'Z' suffix for API compatibility
+
+## Timezone Handling (v0.1.3+)
+- **Breaking Change**: Fixed incorrect UTC parsing - API timestamps are actually in local time despite 'Z' suffix
+- **Default Timezone**: Pacific Time (`America/Los_Angeles`) - configurable via `DropCountrClient(timezone=...)`
+- **Custom Timezones**: Support any IANA timezone name or `ZoneInfo` object
+- **Timezone-Aware**: All `start_date` and `end_date` properties return timezone-aware datetime objects
+- **API Compatibility**: Input datetime objects are still converted to UTC with 'Z' suffix for API requests
+- **Standard Library**: Uses Python 3.12+ `zoneinfo` module (no external dependencies)
+
+### Timezone Usage:
+```python
+# Default Pacific timezone
+client = DropCountrClient()
+
+# Custom timezone by name
+client = DropCountrClient(timezone="America/New_York")
+
+# Custom timezone by ZoneInfo
+from zoneinfo import ZoneInfo
+client = DropCountrClient(timezone=ZoneInfo("UTC"))
+```
 
 ## Changelog Management
 

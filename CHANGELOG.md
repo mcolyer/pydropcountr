@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Fixed timezone handling for API datetime responses
+- Datetime objects returned by `start_date` and `end_date` are now timezone-aware in local time instead of incorrectly parsed as UTC
+- Added configurable timezone support to `DropCountrClient` constructor (defaults to `America/Los_Angeles`)
+- API timestamps with 'Z' suffix are now correctly interpreted as local time rather than UTC
+
+### Added
+- Timezone configuration parameter to `DropCountrClient.__init__(timezone=...)`
+- Support for custom timezones using IANA timezone names or `ZoneInfo` objects
+- All datetime properties now return timezone-aware datetime objects
+
 ## [0.1.2] - 2025-01-03
 
 ### Fixed
