@@ -111,7 +111,7 @@ class DropCountrCLI:
             self.logger.debug(f"Error getting service details for {service_id}: {e}")
             return None
 
-    def _format_usage_data(self, usage_data: list, title: str) -> float | None:
+    def _format_usage_data(self, usage_data: list, title: str, period: str = "day", verbose: bool = False) -> float | None:
         """Format and display usage data"""
         if not usage_data:
             print(f"{title}: No data available")
@@ -120,11 +120,27 @@ class DropCountrCLI:
         print(f"\n{title}:")
         total_gallons = 0
         for record in usage_data:
-            date_str = record.start_date.strftime("%Y-%m-%d")
+            if period == "hour":
+                date_str = record.start_date.strftime("%Y-%m-%d %H:%M %Z")
+            else:
+                date_str = record.start_date.strftime("%Y-%m-%d")
             gallons = record.total_gallons
             total_gallons += gallons
             leak_indicator = " 🚨" if record.is_leaking else ""
-            print(f"  {date_str}: {gallons:,.1f} gallons{leak_indicator}")
+            
+            if verbose:
+                # Show raw data
+                print(f"  {date_str}: {gallons:,.1f} gallons{leak_indicator}")
+                print(f"    Period: {record.during}")
+                print(f"    Start date: {record.start_date}")
+                print(f"    End date: {record.end_date}")
+                print(f"    Total gallons: {record.total_gallons}")
+                print(f"    Irrigation gallons: {record.irrigation_gallons}")
+                print(f"    Irrigation events: {record.irrigation_events}")
+                print(f"    Leak detected: {record.is_leaking}")
+                print()
+            else:
+                print(f"  {date_str}: {gallons:,.1f} gallons{leak_indicator}")
 
         print(f"  Total: {total_gallons:,.1f} gallons")
         return total_gallons
@@ -138,6 +154,7 @@ class DropCountrCLI:
         end_date: str | None = None,
         period: str = "day",
         days: int | None = None,
+        verbose: bool = False,
     ) -> None:
         """
         Get water usage data (default: yesterday + last 7 days)
@@ -150,6 +167,7 @@ class DropCountrCLI:
             end_date: End date in YYYY-MM-DD format
             period: Data granularity ("day" or "hour")
             days: Number of days back from today (overrides start_date/end_date)
+            verbose: Show detailed raw API data
 
         Examples:
             # Default: Show yesterday + last 7 days
@@ -198,7 +216,7 @@ class DropCountrCLI:
                     period,
                 )
                 if yesterday_usage and yesterday_usage.usage_data:
-                    self._format_usage_data(yesterday_usage.usage_data, "Yesterday")
+                    self._format_usage_data(yesterday_usage.usage_data, "Yesterday", period, verbose)
                 else:
                     print("Yesterday: No data available")
             except Exception as e:
@@ -217,7 +235,7 @@ class DropCountrCLI:
                 date_range = f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}"
                 if not (start_date or end_date or days):
                     date_range = "Last 7 Days"
-                self._format_usage_data(usage.usage_data, date_range)
+                self._format_usage_data(usage.usage_data, date_range, period, verbose)
             else:
                 print("No usage data available for the specified period")
 
