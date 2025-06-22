@@ -14,6 +14,7 @@ def test_client_creation():
     assert not client.is_logged_in()
     print("✓ Client creation test passed")
 
+
 def test_login_with_invalid_credentials():
     """Test login with obviously invalid credentials"""
     client = DropCountrClient()
@@ -26,6 +27,7 @@ def test_login_with_invalid_credentials():
     except Exception as e:
         print(f"✓ Invalid login test completed (exception: {e})")
 
+
 def test_usage_data_class():
     """Test the UsageData class"""
     usage = UsageData(
@@ -33,7 +35,7 @@ def test_usage_data_class():
         total_gallons=7.4805193,
         irrigation_gallons=0.0,
         irrigation_events=0.0,
-        is_leaking=False
+        is_leaking=False,
     )
 
     # Test property access
@@ -49,6 +51,7 @@ def test_usage_data_class():
     assert end_date.day == 2
 
     print("✓ UsageData class test passed")
+
 
 def test_datetime_conversion():
     """Test the datetime conversion functionality"""
@@ -66,6 +69,7 @@ def test_datetime_conversion():
 
     print("✓ Datetime conversion test passed")
 
+
 def test_get_usage_without_login():
     """Test that get_usage fails when not logged in"""
     client = DropCountrClient()
@@ -82,27 +86,29 @@ def test_get_usage_without_login():
     except Exception as e:
         print(f"✗ Unexpected exception: {e}")
 
+
 def test_service_connection_class():
     """Test the ServiceConnection class"""
     # Test creating from API response format
     api_data = {
-        'id': 1064520,
-        'name': 'Main Service',
-        'address': '123 Main St',
-        'account_number': 'ACC123',
-        'service_type': 'Water',
-        'status': 'Active',
-        'meter_serial': 'METER123',
-        '@id': 'https://dropcountr.com/api/service_connections/1064520'
+        "id": 1064520,
+        "name": "Main Service",
+        "address": "123 Main St",
+        "account_number": "ACC123",
+        "service_type": "Water",
+        "status": "Active",
+        "meter_serial": "METER123",
+        "@id": "https://dropcountr.com/api/service_connections/1064520",
     }
 
     service = ServiceConnection.from_api_response(api_data)
     assert service.id == 1064520
-    assert service.name == 'Main Service'
-    assert service.address == '123 Main St'
-    assert service.account_number == 'ACC123'
+    assert service.name == "Main Service"
+    assert service.address == "123 Main St"
+    assert service.account_number == "ACC123"
 
     print("✓ ServiceConnection class test passed")
+
 
 def test_service_methods_without_login():
     """Test that service methods fail when not logged in"""
@@ -122,9 +128,12 @@ def test_service_methods_without_login():
         client.list_service_connections()
         print("✗ Expected ValueError for list_service_connections without login")
     except ValueError:
-        print("✓ list_service_connections correctly raises ValueError when not logged in")
+        print(
+            "✓ list_service_connections correctly raises ValueError when not logged in"
+        )
     except Exception as e:
         print(f"✗ Unexpected exception: {e}")
+
 
 if __name__ == "__main__":
     print("Running basic tests for PyDropCountr...")
@@ -161,5 +170,6 @@ if __name__ == "__main__":
     print("    if usage:")
     print("        print(f'Total records: {usage.total_items}')")
     print("        for record in usage.usage_data[:3]:  # Show first 3 records")
-    print("            print(f'{record.start_date.date()}: {record.total_gallons} gallons')")
-
+    print(
+        "            print(f'{record.start_date.date()}: {record.total_gallons} gallons')"
+    )

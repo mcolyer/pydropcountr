@@ -19,10 +19,14 @@ class DropCountrCLI:
     def __init__(self, debug: bool = False):
         self.debug = debug
         if debug:
-            logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+            logging.basicConfig(
+                level=logging.DEBUG, format="%(levelname)s: %(message)s"
+            )
             print("Debug mode enabled")
         else:
-            logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+            logging.basicConfig(
+                level=logging.WARNING, format="%(levelname)s: %(message)s"
+            )
 
         self.logger = logging.getLogger(__name__)
         self.client = DropCountrClient()
@@ -37,10 +41,10 @@ class DropCountrCLI:
         password = password or os.getenv("DROPCOUNTR_PASSWORD")
 
         # Safe debug logging for email
-        if email and '@' in email:
+        if email and "@" in email:
             email_debug = f"{email[:3]}***@{email.split('@')[1]}"
         else:
-            email_debug = f"'{email}'" if email else 'None'
+            email_debug = f"'{email}'" if email else "None"
         self.logger.debug(f"Login attempt with email: {email_debug}")
 
         if not email or not password:
@@ -78,7 +82,9 @@ class DropCountrCLI:
         try:
             self.logger.debug("Fetching service connections...")
             services = self.client.list_service_connections()
-            self.logger.debug(f"Retrieved {len(services) if services else 0} service connections")
+            self.logger.debug(
+                f"Retrieved {len(services) if services else 0} service connections"
+            )
 
             if not services:
                 self.logger.debug("No service connections returned from API")
@@ -86,7 +92,9 @@ class DropCountrCLI:
                 sys.exit(1)
 
             service = services[0]
-            self.logger.debug(f"Using first service: {service.name} (ID: {service.id}) at {service.address}")
+            self.logger.debug(
+                f"Using first service: {service.name} (ID: {service.id}) at {service.address}"
+            )
             print(f"Using service: {service.name} (ID: {service.id})")
             print(f"Address: {service.address}")
             return service.id
@@ -103,7 +111,9 @@ class DropCountrCLI:
             if services:
                 for service in services:
                     if service.id == service_id:
-                        self.logger.debug(f"Found service {service_id}: {service.name} at {service.address}")
+                        self.logger.debug(
+                            f"Found service {service_id}: {service.name} at {service.address}"
+                        )
                         return service
             self.logger.debug(f"Service {service_id} not found")
             return None
@@ -111,7 +121,9 @@ class DropCountrCLI:
             self.logger.debug(f"Error getting service details for {service_id}: {e}")
             return None
 
-    def _format_usage_data(self, usage_data: list, title: str, period: str = "day", verbose: bool = False) -> float | None:
+    def _format_usage_data(
+        self, usage_data: list, title: str, period: str = "day", verbose: bool = False
+    ) -> float | None:
         """Format and display usage data"""
         if not usage_data:
             print(f"{title}: No data available")
@@ -216,7 +228,9 @@ class DropCountrCLI:
                     period,
                 )
                 if yesterday_usage and yesterday_usage.usage_data:
-                    self._format_usage_data(yesterday_usage.usage_data, "Yesterday", period, verbose)
+                    self._format_usage_data(
+                        yesterday_usage.usage_data, "Yesterday", period, verbose
+                    )
                 else:
                     print("Yesterday: No data available")
             except Exception as e:
@@ -232,7 +246,9 @@ class DropCountrCLI:
             usage = self.client.get_usage(actual_service_id, start_dt, end_dt, period)
 
             if usage and usage.usage_data:
-                date_range = f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}"
+                date_range = (
+                    f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}"
+                )
                 if not (start_date or end_date or days):
                     date_range = "Last 7 Days"
                 self._format_usage_data(usage.usage_data, date_range, period, verbose)
@@ -262,7 +278,9 @@ class DropCountrCLI:
         try:
             self.logger.debug("Services command: Fetching service connections...")
             services = self.client.list_service_connections()
-            self.logger.debug(f"Services command: Retrieved {len(services) if services else 0} services")
+            self.logger.debug(
+                f"Services command: Retrieved {len(services) if services else 0} services"
+            )
 
             if not services:
                 self.logger.debug("Services command: No services found")
@@ -296,9 +314,9 @@ def main() -> None:
 
     # Check for debug flag and remove it from sys.argv before Fire processes it
     debug = False
-    if '--debug' in sys.argv:
+    if "--debug" in sys.argv:
         debug = True
-        sys.argv.remove('--debug')
+        sys.argv.remove("--debug")
 
     # Create CLI instance with debug flag
     cli = DropCountrCLI(debug=debug)
