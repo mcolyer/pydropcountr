@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-01-03
+
 ### Changed
 - **BREAKING**: Fixed timezone handling for API datetime responses
 - Datetime objects returned by `start_date` and `end_date` are now timezone-aware in local time instead of incorrectly parsed as UTC
