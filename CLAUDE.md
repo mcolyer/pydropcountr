@@ -160,11 +160,14 @@ This project maintains a comprehensive CHANGELOG.md file following [Keep a Chang
 4. Include relevant details like new CLI flags, API changes, or breaking changes
 
 **Release process:**
-1. Update CHANGELOG.md with new version section
-2. Move items from [Unreleased] to the new version section with date
-3. Update version number in pyproject.toml
-4. Create git tag with version number: `git tag v0.x.x`
-5. Create GitHub release with changelog notes
+1. **Get current date**: Run `date` command to get today's date in YYYY-MM-DD format
+2. Update CHANGELOG.md with new version section using the current date
+3. Move items from [Unreleased] to the new version section with correct date
+4. Update version number in pyproject.toml
+5. Create git tag with version number: `git tag v0.x.x`
+6. Create GitHub release with changelog notes
+
+**Important**: Always use the actual release date in CHANGELOG.md, not old dates. Use `date` command to get the current date before editing release notes.
 
 **Example changelog entry:**
 ```markdown
