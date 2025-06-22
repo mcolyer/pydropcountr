@@ -127,7 +127,7 @@ class DropCountrCLI:
             gallons = record.total_gallons
             total_gallons += gallons
             leak_indicator = " 🚨" if record.is_leaking else ""
-            
+
             if verbose:
                 # Show raw data
                 print(f"  {date_str}: {gallons:,.1f} gallons{leak_indicator}")

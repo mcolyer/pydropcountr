@@ -4,6 +4,7 @@ PyDropCountr - Python library for interacting with dropcountr.com
 
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 from pydantic import BaseModel, Field
@@ -16,16 +17,32 @@ class UsageData(BaseModel):
     irrigation_gallons: float = Field(ge=0, description="Irrigation usage in gallons")
     irrigation_events: float = Field(ge=0, description="Number of irrigation events")
     is_leaking: bool = Field(description="Whether a leak was detected")
+    _timezone: ZoneInfo | None = None
 
     @property
     def start_date(self) -> datetime:
-        """Parse and return the start date from the during field"""
-        return datetime.fromisoformat(self.during.split('/')[0].replace('Z', '+00:00'))
+        """Parse and return the start date from the during field as timezone-aware datetime"""
+        dt_str = self.during.split('/')[0].replace('Z', '')
+        dt = datetime.fromisoformat(dt_str)
+        if self._timezone:
+            return dt.replace(tzinfo=self._timezone)
+        return dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))
 
     @property
     def end_date(self) -> datetime:
-        """Parse and return the end date from the during field"""
-        return datetime.fromisoformat(self.during.split('/')[1].replace('Z', '+00:00'))
+        """Parse and return the end date from the during field as timezone-aware datetime"""
+        dt_str = self.during.split('/')[1].replace('Z', '')
+        dt = datetime.fromisoformat(dt_str)
+        if self._timezone:
+            return dt.replace(tzinfo=self._timezone)
+        return dt.replace(tzinfo=ZoneInfo("America/Los_Angeles"))
+
+    def set_timezone(self, timezone: ZoneInfo | str) -> None:
+        """Set the timezone for parsing datetime fields"""
+        if isinstance(timezone, str):
+            self._timezone = ZoneInfo(timezone)
+        else:
+            self._timezone = timezone
 
 
 class UsageResponse(BaseModel):
@@ -65,12 +82,18 @@ class ServiceConnection(BaseModel):
 class DropCountrClient:
     """Client for interacting with the DropCountr.com API"""
 
-    def __init__(self) -> None:
+    def __init__(self, timezone: str | ZoneInfo = "America/Los_Angeles") -> None:
         self.session = requests.Session()
         self.base_url = "https://dropcountr.com"
         self.logged_in = False
         self.user_id: int | None = None
         self.logger = logging.getLogger(__name__)
+
+        # Set timezone for datetime parsing
+        if isinstance(timezone, str):
+            self.timezone = ZoneInfo(timezone)
+        else:
+            self.timezone = timezone
 
     def _datetime_to_iso(self, dt: datetime | str) -> str:
         """Convert datetime object or string to ISO format string for API"""
@@ -209,13 +232,15 @@ class DropCountrClient:
             # Parse usage data
             usage_records = []
             for record in data['data']['member']:
-                usage_records.append(UsageData(
+                usage_data = UsageData(
                     during=record['during'],
                     total_gallons=record['total_gallons'],
                     irrigation_gallons=record['irrigation_gallons'],
                     irrigation_events=record['irrigation_events'],
                     is_leaking=record['is_leaking']
-                ))
+                )
+                usage_data.set_timezone(self.timezone)
+                usage_records.append(usage_data)
 
             return UsageResponse(
                 usage_data=usage_records,
