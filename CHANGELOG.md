@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for custom timezones using IANA timezone names or `ZoneInfo` objects
 - All datetime properties now return timezone-aware datetime objects
 
-## [0.1.2] - 2025-01-03
+## [0.1.2] - 2025-06-12
 
 ### Fixed
 - All MyPy type checking errors for improved code quality and IDE support
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Type compatibility issues in ServiceConnection instantiation
 - Return type consistency across all public methods
 
-## [0.1.1] - 2025-01-03
+## [0.1.1] - 2025-06-12
 
 ### Added
 - GitHub Actions workflow for automated PyPI publishing with trusted publishing
@@ -54,39 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced address display format with complete location information
 - Updated CI workflow to work with new package structure and latest tooling
 
-## [0.3.0] - 2025-06-12
-
-### Added
-- Comprehensive CLI interface using Fire library
-- Default behavior showing yesterday + last 7 days usage
-- Support for all CLI flags (email, password, service_id, dates, period)
-- Environment variable support for credentials (DROPCOUNTR_EMAIL, DROPCOUNTR_PASSWORD)
-- CLI entry point in pyproject.toml as `dropcountr` command
-
-### Changed
-- CLI now automatically selects first available service connection as default
-
-## [0.2.0] - 2025-06-12
-
-### Added
-- Pydantic data models for type safety and validation
-- Comprehensive README.md with usage examples
-- GitHub Actions CI/CD pipeline with linting and testing
-- Support for modern Python type hints (X | Y union syntax)
-- Service connection management APIs (`list_service_connections`, `get_service_connection`)
-- Support for Python datetime objects in `get_usage()` method (alongside ISO strings)
-- Data validation constraints (e.g., gallons >= 0)
-
-### Changed
-- Migrated from dataclasses to Pydantic BaseModel for all data structures
-- Updated to modern Python syntax throughout codebase
-- Enhanced type hints and validation
-
-### Fixed
-- Date parameter handling now supports both datetime objects and ISO strings
-- Improved error handling and validation
-
-## [0.1.0] - 2025-05-25
+## [0.1.0] - 2025-06-12
 
 ### Added
 - Initial PyDropCountr library implementation
