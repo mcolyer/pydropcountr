@@ -210,9 +210,7 @@ class DropCountrCLI:
         elif start_date and end_date:
             # Use specific date range
             start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(
-                hour=23, minute=59, second=59
-            )
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
         else:
             # Default: yesterday + last 7 days
             yesterday = today - timedelta(days=1)
@@ -224,7 +222,7 @@ class DropCountrCLI:
                 yesterday_usage = self.client.get_usage(
                     actual_service_id,
                     yesterday,
-                    yesterday.replace(hour=23, minute=59, second=59),
+                    yesterday + timedelta(days=1),
                     period,
                 )
                 if yesterday_usage and yesterday_usage.usage_data:
@@ -239,7 +237,7 @@ class DropCountrCLI:
             # Show last 7 days
             print("=" * 50)
             start_dt = week_ago
-            end_dt = yesterday.replace(hour=23, minute=59, second=59)
+            end_dt = yesterday + timedelta(days=1)
 
         # Get and display usage data
         try:
