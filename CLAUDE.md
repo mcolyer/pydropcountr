@@ -121,6 +121,16 @@ usage = client.get_usage(
 - **Example discovery**: API timestamps with 'Z' suffix appear to be UTC but are actually local time
 - **Verification approach**: Test with known local time data to verify timezone behavior
 - **Breaking changes**: When fixing incorrect behavior, document as breaking change even if fixing a bug
+- **Hourly range limit**: The API silently returns empty results (no error) when requesting `period=hour` over a multi-day range; limit hourly queries to a single day
+
+### CLI Usage Notes
+- `--period day` (or `--period days`): daily granularity; `--period hour` (or `--period hours`, `--hours`): hourly granularity
+- `--hours` is a boolean shorthand for `--period=hour`; `--period days`/`--period hours` are automatically normalized to singular form
+- `--days N` fetches N days back from yesterday, with end set to yesterday at 23:59:59
+- `--start_date YYYY-MM-DD` without `--end_date`:
+  - Daily: defaults end to today at 23:59:59
+  - Hourly: defaults end to end-of-start-date at 23:59:59 (API rejects multi-day hourly ranges)
+- `--start_date` + `--end_date`: explicit inclusive range (end date is set to 23:59:59 automatically)
 
 ## Timezone Handling (v0.1.3+)
 - **Breaking Change**: Fixed incorrect UTC parsing - API timestamps are actually in local time despite 'Z' suffix

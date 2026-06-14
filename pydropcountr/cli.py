@@ -230,9 +230,13 @@ class DropCountrCLI:
                 hour=23, minute=59, second=59
             )
         elif start_date:
-            # start_date only: range to end of today
             start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-            end_dt = today.replace(hour=23, minute=59, second=59)
+            # Hourly: default to end of the same day (API rejects wide ranges for hour period)
+            # Daily: default to end of today
+            if period == "hour":
+                end_dt = start_dt.replace(hour=23, minute=59, second=59)
+            else:
+                end_dt = today.replace(hour=23, minute=59, second=59)
         else:
             # Default: yesterday + last 7 days
             yesterday = today - timedelta(days=1)

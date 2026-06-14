@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - CLI `--days` end time was midnight (00:00:00) instead of end-of-day (23:59:59), causing the last day to be missing from results
 - `--period days` now normalizes to `day` (and `hours` → `hour`) instead of sending invalid values to the API
-- `--start_date` without `--end_date` now defaults end to today instead of falling back to the default 7-day display mode
+- `--start_date` without `--end_date` now defaults end to today (daily) or end-of-start-day (hourly) instead of falling back to the default 7-day display mode
+- Hourly period with `--start_date` only now scopes to that single day to avoid the API's range limit for hourly queries
 
 ### Added
 - CLI `--hours` flag as shorthand for `--period=hour`
