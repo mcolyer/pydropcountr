@@ -166,6 +166,7 @@ class DropCountrCLI:
         end_date: str | None = None,
         period: str = "day",
         days: int | None = None,
+        hours: bool = False,
         verbose: bool = False,
     ) -> None:
         """
@@ -176,9 +177,10 @@ class DropCountrCLI:
             password: DropCountr password (or set DROPCOUNTR_PASSWORD env var)
             service_id: Service connection ID (uses first service if not specified)
             start_date: Start date in YYYY-MM-DD format
-            end_date: End date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format (defaults to today when start_date is set)
             period: Data granularity ("day" or "hour")
             days: Number of days back from today (overrides start_date/end_date)
+            hours: Shorthand for --period=hour
             verbose: Show detailed raw API data
 
         Examples:
@@ -188,12 +190,26 @@ class DropCountrCLI:
             # Show last 30 days
             dropcountr usage --days=30
 
+            # Show last 7 days in hourly detail
+            dropcountr usage --days=7 --hours
+
             # Show specific date range
             dropcountr usage --start_date=2025-06-01 --end_date=2025-06-15
+
+            # Show from a date to today
+            dropcountr usage --start_date=2025-06-01
 
             # Use specific service
             dropcountr usage --service_id=1234567
         """
+        # Resolve period aliases and validate
+        if hours:
+            period = "hour"
+        period = {"days": "day", "hours": "hour"}.get(period, period)
+        if period not in ("day", "hour"):
+            print(f"Error: Invalid period '{period}'. Use 'day' or 'hour'.")
+            sys.exit(1)
+
         # Login
         self._login(email, password)
 
@@ -205,7 +221,7 @@ class DropCountrCLI:
 
         if days is not None:
             # Use days parameter
-            end_dt = today - timedelta(days=1)  # Yesterday
+            end_dt = (today - timedelta(days=1)).replace(hour=23, minute=59, second=59)
             start_dt = today - timedelta(days=days)
         elif start_date and end_date:
             # Use specific date range
@@ -213,6 +229,10 @@ class DropCountrCLI:
             end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(
                 hour=23, minute=59, second=59
             )
+        elif start_date:
+            # start_date only: range to end of today
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = today.replace(hour=23, minute=59, second=59)
         else:
             # Default: yesterday + last 7 days
             yesterday = today - timedelta(days=1)
