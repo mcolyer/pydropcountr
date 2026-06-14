@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-14
+
 ### Fixed
 - CLI `--days` end time was midnight (00:00:00) instead of end-of-day (23:59:59), causing the last day to be missing from results
 - `--period days` now normalizes to `day` (and `hours` → `hour`) instead of sending invalid values to the API
